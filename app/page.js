@@ -110,44 +110,45 @@ function MonthlyChart({ purchases, payouts }) {
         </div>
       </div>
 
-      {/* Bars */}
-      <div style={{ display:'flex', gap:0 }}>
-        {/* Y-axis labels */}
-        <div style={{ display:'flex', flexDirection:'column', justifyContent:'flex-end', paddingBottom:40, marginRight:8, gap:2, flexShrink:0 }}>
-          <div style={{ fontSize:9, color:'#6b6b78', textAlign:'right', fontFamily:'monospace', marginBottom:2 }}>Expenses</div>
-          <div style={{ fontSize:9, color:'#6b6b78', textAlign:'right', fontFamily:'monospace', marginBottom:2 }}>Payouts</div>
-          <div style={{ fontSize:9, color:'#6b6b78', textAlign:'right', fontFamily:'monospace', borderTop:'1px solid rgba(255,255,255,0.08)', paddingTop:2 }}>Net</div>
-        </div>
-      <div style={{ overflowX:'auto', paddingBottom:8, flex:1 }}>
-        <div style={{ display:'flex', alignItems:'flex-end', gap:6, minWidth: sorted.length * 52 }}>
+      {/* Bars + labels */}
+      <div style={{ overflowX:'auto', paddingBottom:8 }}>
+        <div style={{ display:'flex', alignItems:'flex-end', gap:6, minWidth: sorted.length * 52 + 64 }}>
+
+          {/* Left labels column */}
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', flexShrink:0, width:56, paddingBottom:0, gap:0 }}>
+            <div style={{ height: barH }} />
+            <div style={{ fontSize:9, color:'#6b6b78', fontFamily:'monospace', height:16, display:'flex', alignItems:'center' }}>month</div>
+            <div style={{ fontSize:9, color:'#ff5a5a', fontFamily:'monospace', height:16, display:'flex', alignItems:'center' }}>expenses</div>
+            <div style={{ fontSize:9, color:'#22d87e', fontFamily:'monospace', height:16, display:'flex', alignItems:'center' }}>payouts</div>
+            <div style={{ fontSize:9, color:'#6b6b78', fontFamily:'monospace', height:17, display:'flex', alignItems:'center', borderTop:'1px solid rgba(255,255,255,0.08)', width:'100%', justifyContent:'flex-end' }}>net</div>
+          </div>
+
           {sorted.map(m => {
             const spentH  = Math.round((m.spent  / maxVal) * barH)
             const earnedH = Math.round((m.earned / maxVal) * barH)
             const net     = m.earned - m.spent
             return (
-              <div key={m.key} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, flex:'0 0 46px' }}>
-                {/* Tooltip on hover via title */}
+              <div key={m.key} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:0, flex:'0 0 46px' }}>
                 <div style={{ display:'flex', gap:3, alignItems:'flex-end', height: barH }}>
                   <div title={`Expenses: ${fmt(m.spent)}`}
                     style={{ width:18, height: spentH || 2, background:'#ff5a5a', borderRadius:'3px 3px 0 0', opacity:0.85, cursor:'default', minHeight:2 }} />
                   <div title={`Payouts: ${fmt(m.earned)}`}
                     style={{ width:18, height: earnedH || 2, background:'#22d87e', borderRadius:'3px 3px 0 0', opacity:0.85, cursor:'default', minHeight:2 }} />
                 </div>
-                <div style={{ fontSize:9, color:'#6b6b78', textAlign:'center', letterSpacing:'0.02em' }}>{m.lbl}</div>
-                <div style={{ fontSize:9, fontFamily:'monospace', color:'#ff5a5a', textAlign:'center' }}>
+                <div style={{ fontSize:9, color:'#6b6b78', textAlign:'center', height:16, display:'flex', alignItems:'center' }}>{m.lbl}</div>
+                <div style={{ fontSize:9, fontFamily:'monospace', color:'#ff5a5a', textAlign:'center', height:16, display:'flex', alignItems:'center' }}>
                   {m.spent > 0 ? '-$'+m.spent.toFixed(0) : '—'}
                 </div>
-                <div style={{ fontSize:9, fontFamily:'monospace', color:'#22d87e', textAlign:'center' }}>
+                <div style={{ fontSize:9, fontFamily:'monospace', color:'#22d87e', textAlign:'center', height:16, display:'flex', alignItems:'center' }}>
                   {m.earned > 0 ? '+$'+m.earned.toFixed(0) : '—'}
                 </div>
-                <div style={{ fontSize:9, fontFamily:'monospace', color: net >= 0 ? '#22d87e' : '#ff5a5a', textAlign:'center', borderTop:'1px solid rgba(255,255,255,0.08)', paddingTop:2, marginTop:1 }}>
+                <div style={{ fontSize:9, fontFamily:'monospace', color: net >= 0 ? '#22d87e' : '#ff5a5a', textAlign:'center', borderTop:'1px solid rgba(255,255,255,0.08)', height:17, display:'flex', alignItems:'center', width:'100%', justifyContent:'center' }}>
                   {net >= 0 ? '+' : ''}{net === 0 ? '—' : '$'+Math.abs(net).toFixed(0)}
                 </div>
               </div>
             )
           })}
         </div>
-      </div>
       </div>
 
       {/* Y axis hint */}
