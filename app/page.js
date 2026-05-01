@@ -111,7 +111,14 @@ function MonthlyChart({ purchases, payouts }) {
       </div>
 
       {/* Bars */}
-      <div style={{ overflowX:'auto', paddingBottom:8 }}>
+      <div style={{ display:'flex', gap:0 }}>
+        {/* Y-axis labels */}
+        <div style={{ display:'flex', flexDirection:'column', justifyContent:'flex-end', paddingBottom:40, marginRight:8, gap:2, flexShrink:0 }}>
+          <div style={{ fontSize:9, color:'#6b6b78', textAlign:'right', fontFamily:'monospace', marginBottom:2 }}>Expenses</div>
+          <div style={{ fontSize:9, color:'#6b6b78', textAlign:'right', fontFamily:'monospace', marginBottom:2 }}>Payouts</div>
+          <div style={{ fontSize:9, color:'#6b6b78', textAlign:'right', fontFamily:'monospace', borderTop:'1px solid rgba(255,255,255,0.08)', paddingTop:2 }}>Net</div>
+        </div>
+      <div style={{ overflowX:'auto', paddingBottom:8, flex:1 }}>
         <div style={{ display:'flex', alignItems:'flex-end', gap:6, minWidth: sorted.length * 52 }}>
           {sorted.map(m => {
             const spentH  = Math.round((m.spent  / maxVal) * barH)
@@ -140,6 +147,7 @@ function MonthlyChart({ purchases, payouts }) {
             )
           })}
         </div>
+      </div>
       </div>
 
       {/* Y axis hint */}
