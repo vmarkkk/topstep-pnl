@@ -127,8 +127,11 @@ function MonthlyChart({ purchases, payouts }) {
                     style={{ width:18, height: earnedH || 2, background:'#22d87e', borderRadius:'3px 3px 0 0', opacity:0.85, cursor:'default', minHeight:2 }} />
                 </div>
                 <div style={{ fontSize:9, color:'#6b6b78', textAlign:'center', letterSpacing:'0.02em' }}>{m.lbl}</div>
-                <div style={{ fontSize:9, fontFamily:'monospace', color: net >= 0 ? '#22d87e' : '#ff5a5a', textAlign:'center' }}>
-                  {net >= 0 ? '+' : ''}{net === 0 ? '—' : '$' + Math.abs(net).toFixed(0)}
+                <div style={{ fontSize:9, fontFamily:'monospace', color:'#ff5a5a', textAlign:'center' }}>
+                  {m.spent > 0 ? '-$'+m.spent.toFixed(0) : '—'}
+                </div>
+                <div style={{ fontSize:9, fontFamily:'monospace', color:'#22d87e', textAlign:'center' }}>
+                  {m.earned > 0 ? '+$'+m.earned.toFixed(0) : '—'}
                 </div>
               </div>
             )
