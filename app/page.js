@@ -1,11 +1,11 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 const fmt  = n => '$' + Math.abs(+n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtS = n => (+n >= 0 ? '+$' : '-$') + Math.abs(+n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 // ── Static data (Apex + MFFU — no API needed) ─────────────────────────────────
-const APEX_PURCHASES = [
+const DEFAULT_APEX = [
   {id:"2YAV5N3",  createdAt:"2026-05-11", total:34.90,  type:"Eval",          account:"APEX-347903-11"},
   {id:"KF9VEUG",  createdAt:"2026-01-29", total:75.00,  type:"PA Activation", account:"PA-APEX-347903-03"},
   {id:"WA5V2SX",  createdAt:"2026-01-28", total:19.70,  type:"Eval",          account:"APEX-347903-10"},
@@ -22,7 +22,7 @@ const APEX_PURCHASES = [
   {id:"6MGBG",    createdAt:"2025-05-28", total:16.70,  type:"Eval",          account:"APEX-347903-01"},
 ]
 
-const MFFU_PURCHASES = [
+const DEFAULT_MFFU = [
   {id:"ORD-tUncIkiVXs", createdAt:"2025-11-21", total:127,    type:"Scale50KFlex"},
   {id:"ORD-YHJVJhwyDr", createdAt:"2025-08-07", total:127,    type:"StarterPlus50K Reset"},
   {id:"ORD-sXlYDhrUZD", createdAt:"2025-08-07", total:127,    type:"StarterPlus50K Reset"},
@@ -51,7 +51,7 @@ const MFFU_PURCHASES = [
   {id:"ORD-wwGfNnCTTB", createdAt:"2025-05-23", total:63.5,   type:"StarterPlus50K Account"},
 ]
 
-const ALPHA_PURCHASES = [
+const DEFAULT_ALPHA = [
   {id:"ACGFUTR-31790-1756217459", createdAt:"2025-08-26", total:89.1,  type:"Eval",  account:"202508261562"},
   {id:"ACGFUTR-31790-1756527599", createdAt:"2025-08-30", total:71.1,  type:"Reset", account:"202508261562"},
   {id:"ACGFUTR-31790-1756823325", createdAt:"2025-09-02", total:74.25, type:"Eval",  account:"202509022542"},
@@ -228,11 +228,43 @@ function MonthlyChart({ allPurchases, allPayouts }) {
 function Dashboard({ tsData, goal, setGoal, logout }) {
   const date  = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})
   const goalN = parseFloat(goal)||0
+  const [showEdit, setShowEdit] = useState(false)
+  const [editData, setEditData] = useState(() => {
+    try {
+      const saved = typeof window !== 'undefined' && localStorage.getItem('firmOverrides')
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return {
+      apex:  { spent: DEFAULT_APEX.reduce((s,p)=>s+p.total,0).toFixed(2),  payouts: '0', count: DEFAULT_APEX.length },
+      alpha: { spent: DEFAULT_ALPHA.reduce((s,p)=>s+p.total,0).toFixed(2), payouts: '0', count: DEFAULT_ALPHA.length },
+      mffu:  { spent: DEFAULT_MFFU.reduce((s,p)=>s+p.total,0).toFixed(2),  payouts: '0', count: DEFAULT_MFFU.length },
+    }
+  })
+
+  const saveEdit = (firm, field, val) => {
+    const updated = { ...editData, [firm]: { ...editData[firm], [field]: val } }
+    setEditData(updated)
+    try { localStorage.setItem('firmOverrides', JSON.stringify(updated)) } catch {}
+  }
+
+  // Use override values instead of hardcoded arrays
+  const makeFirmStats = (key) => {
+    const d = editData[key]
+    const spent  = parseFloat(d.spent  || 0)
+    const earned = parseFloat(d.payouts || 0)
+    const count  = parseInt(d.count || 0)
+    return {
+      spent, earned, fees: 0,
+      purchases: Array.from({length: count}, (_,i) => ({ total: spent/Math.max(count,1), createdAt: null })),
+      payouts: earned > 0 ? [{amount: earned, requestedAmount: earned, status:'finalized', createdAt: null}] : [],
+      subCount: 0, rstCount: 0,
+    }
+  }
 
   const ts    = firmStats(tsData?.purchases||[], tsData?.payouts||[])
-  const apex  = firmStats(APEX_PURCHASES, [])
-  const alpha = firmStats(ALPHA_PURCHASES, [])
-  const mffu  = firmStats(MFFU_PURCHASES, [])
+  const apex  = makeFirmStats('apex')
+  const alpha = makeFirmStats('alpha')
+  const mffu  = makeFirmStats('mffu')
 
   const totSpent  = ts.spent + apex.spent + alpha.spent + mffu.spent
   const totEarned = ts.earned + apex.earned + alpha.earned + mffu.earned
@@ -243,7 +275,22 @@ function Dashboard({ tsData, goal, setGoal, logout }) {
   const goalPct   = goalN > 0 ? Math.min(100,(Math.max(0,net)/goalN)*100) : 0
 
   // All purchases and payouts combined for chart
-  const allPurchases = [...(tsData?.purchases||[]), ...APEX_PURCHASES, ...ALPHA_PURCHASES, ...MFFU_PURCHASES]
+  // build synthetic monthly purchases from override totals for chart
+  const makeSyntheticPurchases = (key, label) => {
+    const d = editData[key]
+    const spent = parseFloat(d.spent||0)
+    if (spent <= 0) return []
+    // spread evenly or use defaults if available
+    const defaults = key==='apex' ? DEFAULT_APEX : key==='alpha' ? DEFAULT_ALPHA : DEFAULT_MFFU
+    const scale = spent / Math.max(defaults.reduce((s,p)=>s+p.total,0), 0.01)
+    return defaults.map(p => ({...p, total: p.total * scale}))
+  }
+  const allPurchases = [
+    ...(tsData?.purchases||[]),
+    ...makeSyntheticPurchases('apex'),
+    ...makeSyntheticPurchases('alpha'),
+    ...makeSyntheticPurchases('mffu'),
+  ]
   const allPayouts   = [...(tsData?.payouts||[])]
 
   const firms = [
@@ -275,6 +322,48 @@ function Dashboard({ tsData, goal, setGoal, logout }) {
       </div>
 
       {roi && <div style={s.roi}>ROI: <span style={{color:net>=0?'#22d87e':'#ff5a5a',fontFamily:'monospace',fontWeight:700}}>{net>=0?'+':''}{roi}%</span></div>}
+
+      {/* Edit panel */}
+      <div style={{marginTop:12,textAlign:'center'}}>
+        <button onClick={()=>setShowEdit(v=>!v)} style={{background:'none',border:'1px solid rgba(255,255,255,0.08)',borderRadius:6,color:'#6b6b78',fontSize:12,padding:'5px 14px',cursor:'pointer'}}>
+          {showEdit ? '↑ Hide Editor' : '✏ Edit Firm Data'}
+        </button>
+      </div>
+
+      {showEdit && (
+        <div style={{marginTop:16,background:'#141418',border:'1px solid rgba(255,255,255,0.08)',borderRadius:12,padding:20}}>
+          <div style={{fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',color:'#6b6b78',fontWeight:500,marginBottom:16}}>Edit Static Firm Data</div>
+          {[['apex','Apex','#4a9eff'],['alpha','Alpha Futures','#a78bfa'],['mffu','MFFU','#f0a830']].map(([key,name,color])=>(
+            <div key={key} style={{marginBottom:16,paddingBottom:16,borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:10}}>
+                <div style={{width:7,height:7,borderRadius:'50%',background:color}}/>
+                <span style={{fontSize:13,fontWeight:600,color:'#e8e8ea'}}>{name}</span>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+                <div>
+                  <label style={{...s.lbl,marginBottom:4}}>Total Spent ($)</label>
+                  <input type="number" value={editData[key].spent}
+                    onChange={e=>saveEdit(key,'spent',e.target.value)}
+                    style={{...s.inp,marginBottom:0,padding:'8px 10px',fontSize:12}} />
+                </div>
+                <div>
+                  <label style={{...s.lbl,marginBottom:4}}>Total Payouts ($)</label>
+                  <input type="number" value={editData[key].payouts}
+                    onChange={e=>saveEdit(key,'payouts',e.target.value)}
+                    style={{...s.inp,marginBottom:0,padding:'8px 10px',fontSize:12}} />
+                </div>
+                <div>
+                  <label style={{...s.lbl,marginBottom:4}}># Purchases</label>
+                  <input type="number" value={editData[key].count}
+                    onChange={e=>saveEdit(key,'count',e.target.value)}
+                    style={{...s.inp,marginBottom:0,padding:'8px 10px',fontSize:12}} />
+                </div>
+              </div>
+            </div>
+          ))}
+          <div style={{fontSize:11,color:'#6b6b78'}}>Changes save automatically to your browser. Numbers update the totals and chart in real time.</div>
+        </div>
+      )}
 
       <Section title="By Firm">
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
