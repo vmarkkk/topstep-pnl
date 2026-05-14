@@ -231,6 +231,7 @@ function Dashboard({ tsData, goal, setGoal, logout }) {
 
   const ts    = firmStats(tsData?.purchases||[], tsData?.payouts||[])
   const apex  = firmStats(APEX_PURCHASES, [])
+  const alpha = firmStats(ALPHA_PURCHASES, [])
   const mffu  = firmStats(MFFU_PURCHASES, [])
 
   const totSpent  = ts.spent + apex.spent + alpha.spent + mffu.spent
@@ -245,7 +246,6 @@ function Dashboard({ tsData, goal, setGoal, logout }) {
   const allPurchases = [...(tsData?.purchases||[]), ...APEX_PURCHASES, ...ALPHA_PURCHASES, ...MFFU_PURCHASES]
   const allPayouts   = [...(tsData?.payouts||[])]
 
-  const alpha = firmStats(ALPHA_PURCHASES, [])
   const firms = [
     { key:'topstep', name:'Topstep',       color:'#22d87e', st:ts,    note:`${ts.subCount} evals · ${ts.rstCount} resets` },
     { key:'apex',    name:'Apex',          color:'#4a9eff', st:apex,  note:`${apex.purchases.length} purchases`, static:true },
